@@ -3,7 +3,7 @@
 install.packages("readr")
 library(readr) # Llamamos la librería
 
-setwd("C:/Users/Javi/Desktop/Programación/R/") # Establecemos el directorio de trabajo
+setwd("/home/alumnot/Documentos/R/") # Establecemos el directorio de trabajo
 getwd()
 
 datos <- read.csv("69959.csv", sep=";") # Leemos el .csv, con sep=";" para que distinga varias columnas.
@@ -78,10 +78,7 @@ datos_bucle <- datos[
 ]
 
 # Convertimos la columna total a numérico (por si viene como character del CSV)
-datos_bucle$total <- as.numeric(gsub(",", ".", datos_bucle$total))
-
-# Convertimos la columna total a numérico (por si viene como character del CSV)
-datos_bucle$total <- as.numeric(gsub(",", ".", datos_bucle$total))
+datos_bucle$total <- as.numeric(gsub("\\.", "", datos_bucle$total))
 
 provincias_unicas <- unique(datos_bucle$provincias)
 
