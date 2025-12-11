@@ -18,7 +18,8 @@ datosAguaFiltrados <- datosAgua[datosAgua$...1 == "2. Volumen de agua no registr
 filtro <- which(datosAgua$...1 == "2. Volumen de agua no registrada") - 3
 
 # Creamos un df con los nombres de las provincias y sólo la primera columna
-provincias <- datosAgua[filtro, 1]
+# provincias <- datosAgua[filtro, 1] Así provincias es un df de una única columna, no un vector PROBLEMA
+provincias <- datosAgua[filtro, 1][[1]] # Para extraer el vector
 
 # Le pasamos al nuevo df los nuevos nombres para sus filas
 datosAguaFiltrados$...1 <- provincias
@@ -73,4 +74,24 @@ datosCensoFiltrados <- rbind(datosCensoFiltrados, c("Ceuta y Melilla", totalCyM)
 # RBIND CAMBIA EL TIPO DE VALOR, CUIDADO QUE ES IMPORTANTE ESTO PORFAVOR
 datosCensoFiltrados$poblacion <- as.numeric(datosCensoFiltrados$poblacion)
 
+# EJERCICIO 4: CONSTRUIR EL CONJUNTO DE DATOS
 
+# Debemos asegurarnos de que ambas columnas son vectores simples
+datosAguaFiltrados$autonomia <- unlist(datosAguaFiltrados$autonomia)
+datosCensoFiltrados$autonomia <- unlist(datosCensoFiltrados$autonomia)
+
+# a) Unir ambos dataframes
+conjuntoDatos <- merge(datosAguaFiltrados, datosCensoFiltrados, by = "autonomia", all = TRUE)
+
+# b) Calcular magnitudes de eficiencia
+
+# Magnitud 1: Litros perdidos por habitante (LpH)
+# Las pérdidas están en miles de m³, así que multiplicamos por 1.000.000 para pasar a litros
+conjuntoDatos$LpH <- conjuntoDatos$perdidas * 1000000 / conjuntoDatos$poblacion
+
+# Magnitud 2: Diferencia Porcentual respecto a la Media (DPM)
+# Calculamos la media nacional
+mediaPerdidaNacional <- conjuntoDatos[conjuntoDatos$autonomia == "Total Nacional", ]$LpH
+
+# Calculamos la diferencia porcentual de cada comunidad respecto a la media
+conjuntoDatos$DPM <- round((conjuntoDatos$LpH - mediaPerdidaNacional) / mediaPerdidaNacional * 100)
