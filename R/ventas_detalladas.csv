@@ -1,0 +1,11 @@
+id_venta,tienda,producto,categoria,precio,cantidad,fecha
+1,Madrid,Portátil Gaming,Gaming,1200,1,2024-01-10
+2,Madrid,Teclado Mecánico,Gaming,150,2,2024-01-10
+3,Barcelona,Silla Oficina,Oficina,230,1,2024-01-11
+4,Sevilla,Monitor 4K,Gaming,480,1,2024-01-11
+5,Valencia,Impresora Oficina,Oficina,180,3,2024-01-12
+6,Madrid,Webcam HD,Oficina,90,1,2024-01-12
+7,Barcelona,Portátil Ultrabook,Trabajo,900,1,2024-01-12
+8,Sevilla,Pack Folios,Oficina,5,10,2024-01-13
+9,Valencia,Ratón Gamer,Gaming,60,3,NA
+10,Madrid,Monitor Curvo,Gaming,380,1,2024-01-13

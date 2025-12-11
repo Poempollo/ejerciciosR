@@ -1,0 +1,11 @@
+id,fecha,producto,categoria,precio,cantidad,tienda
+1,2024-01-03,Portátil,Gaming,1200,2,Madrid
+2,2024-01-05,Monitor,Oficina,250,1,Barcelona
+3,2024-01-06,Teclado,Gaming,80,3,Madrid
+4,2024-01-10,Silla,Oficina,150,1,Valencia
+5,2024-01-12,Portátil,Oficina,900,1,Barcelona
+6,2024-01-15,Ratón,Gaming,40,2,Madrid
+7,2024-01-18,Monitor,Gaming,300,1,Valencia
+8,2024-01-20,Silla,Gaming,200,2,Madrid
+9,2024-01-22,Teclado,Oficina,70,1,Barcelona
+10,2024-01-25,Portátil,Gaming,1500,1,Valencia
