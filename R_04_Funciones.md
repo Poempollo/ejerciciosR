@@ -1,344 +1,298 @@
-# R — Funciones
-> Ctrl+F para buscar. Todo lo que necesitas para el examen de funciones.
+﻿# R  Diseñar Funciones
+> Solo R base. Ctrl+F. Cada línea explicada.
 
 ---
 
-## ESQUEMA MENTAL para diseñar una función
+## Qué es una función y para qué sirve
 
-1. ¿Qué **recibe** la función? (parámetros de entrada)
-2. ¿Qué **devuelve**? (el `return()`)
-3. ¿Es **autocontenida**? (el profesor lo pide: no llama a otras funciones tuyas)
-4. ¿Qué pasa si el parámetro es inválido? (mínimo un `if` de comprobación)
-
----
-
-## 1. Sintaxis básica de una función
+Una función es un bloque de código que puedes reutilizar con distintos datos.
+En vez de repetir el mismo código para cada autonomía, lo metes en una función
+y la llamas pasándole los parámetros que cambien.
 
 ```r
-# Estructura mínima
-mi_funcion <- function(param1, param2) {
-  # cuerpo
-  resultado <- param1 + param2
-  return(resultado)
+# Estructura básica
+nombre_funcion <- function(parametro1, parametro2) {
+  # código que hace algo con los parámetros
+  resultado <- parametro1 + parametro2
+  return(resultado)  # return() es lo que devuelve la función
 }
 
-# Invocar
-mi_funcion(3, 5)           # → 8
-res <- mi_funcion(3, 5)    # guardar el resultado
+# Llamar a la función
+nombre_funcion(3, 5)         #  8
+x <- nombre_funcion(3, 5)    # guardar el resultado en una variable
+print(x)                     # mostrar el resultado
 ```
 
-### Con parámetros por defecto
+---
+
+## 1. Acceder a columnas con nombre variable  EL ERROR MÁS COMÚN
+
+**Cuando el nombre de la columna viene como parámetro, NO puedes usar df$columna.**
+
 ```r
-mi_funcion <- function(df, columna = "Total", top = 5) {
+# SITUACIÓN: tienes una función que recibe el nombre de la columna como parámetro
+mi_funcion <- function(df, nombre_col) {
+
+  df$nombre_col    # MAL: R busca literalmente una columna llamada "nombre_col"
+                   # No entiende que nombre_col es una variable que contiene el nombre
+
+  df[[nombre_col]] # BIEN: los dobles corchetes [[]] evalúan la variable
+                   # Si nombre_col = "Total", esto es equivalente a df$Total
+
+  df[, nombre_col]           # también funciona y devuelve un vector
+  df[, nombre_col, drop=FALSE] # también funciona y devuelve un dataframe
+}
+
+# Ejemplo concreto
+obtener_columna <- function(df, col) {
+  valores <- df[[col]]    # col = "Total"  equivale a df$Total
+  return(valores)
+}
+obtener_columna(datos, "Total")    # funciona
+obtener_columna(datos, "Anno2020") # funciona con cualquier columna
+```
+
+**REGLA:** `df$nombre`  cuando el nombre es texto fijo. `df[[variable]]`  cuando el nombre viene de un parámetro.
+
+---
+
+## 2. Parámetros por defecto
+
+```r
+# Puedes dar valores por defecto a los parámetros
+# Si la función se llama sin ese parámetro, usa el valor por defecto
+
+ranking <- function(df, columna = "Total", top = 5) {
   # Si no se pasa columna, usa "Total"
   # Si no se pasa top, usa 5
-  resultado <- head(df[order(df[[columna]], decreasing = TRUE), ], top)
-  return(resultado)
+
+  df_ordenado <- df[order(df[[columna]], decreasing = TRUE), ]
+  # Ordena el df por la columna indicada, mayor primero
+
+  return(head(df_ordenado, top))
+  # Devuelve solo las primeras "top" filas
 }
 
-mi_funcion(datos)                      # usa columna="Total", top=5
-mi_funcion(datos, columna = "Precio")  # cambia columna
-mi_funcion(datos, "Precio", 10)        # sin nombres
+ranking(datos)                  # usa columna="Total", top=5
+ranking(datos, "Perdidas")      # columna="Perdidas", top=5
+ranking(datos, "Perdidas", 10)  # columna="Perdidas", top=10
+ranking(datos, top = 3)         # columna="Total", top=3 (por nombre de parámetro)
 ```
 
 ---
 
-## 2. Acceder a columnas con nombre variable (¡MUY IMPORTANTE!)
-
-Este es el error más común en el examen. Cuando el nombre de la columna viene como parámetro:
-
-```r
-# MAL — esto no funciona cuando "columna" viene de un parámetro
-df$columna       # busca literalmente una columna llamada "columna"
-
-# BIEN — usar doble corchete [[]]
-df[[columna]]    # busca la columna cuyo nombre está en la variable "columna"
-
-# Ejemplo completo
-obtener_ipc <- function(df, grupo_consumo) {
-  # grupo_consumo es un string como "04 Vivienda"
-  df[, c("Autonomia", grupo_consumo)]    # con corchetes, en select
-  # O:
-  data.frame(Autonomia = df$Autonomia, Valor = df[[grupo_consumo]])
-}
-```
-
-**REGLA:** `df$nombre` → solo cuando el nombre es literal. `df[[variable]]` → cuando el nombre viene de una variable.
-
----
-
-## 3. Función para cargar datos (Ejercicio 1 del examen 2)
-
-```r
-cargar_ipc <- function() {
-  library(readODS)
-
-  ruta <- "C:/ruta/al/fichero/IPCOct24.ods"  # variable de ruta al inicio
-
-  df <- read_ods(
-    path = ruta,
-    sheet = 1,
-    range = "A7:S121",
-    col_names = FALSE
-  )
-
-  # Poner nombres a las columnas
-  colnames(df) <- c("Autonomia", "Grupo", "Indice", "VariacionMensual",
-                    "VariacionAnual", "VariacionAnio")  # adaptar al enunciado
-
-  return(df)
-}
-
-# Invocar y mostrar
-datos <- cargar_ipc()
-print(datos)
-head(datos)
-```
-
----
-
-## 4. Función para filtrar por parámetro (Ejercicio 2 del examen 2)
-
-**Caso típico:** dado el df completo, devolver un df con autonomías + IPC de un grupo de consumo.
-
-```r
-# FUNCIÓN AUTOCONTENIDA: no usa otras funciones propias, solo las de R base
-ipc_por_grupo <- function(df, grupo_consumo) {
-
-  # Filtrar solo las filas del grupo indicado
-  df_filtrado <- df[df$Grupo == grupo_consumo, ]
-
-  # Limpiar el nombre de la autonomía (quitar código numérico)
-  df_filtrado$Autonomia <- gsub("^[0-9]+ ", "", df_filtrado$Autonomia)
-
-  # Seleccionar solo las columnas que interesan
-  resultado <- data.frame(
-    Autonomia = df_filtrado$Autonomia,
-    IPC = df_filtrado$Indice,
-    stringsAsFactors = FALSE
-  )
-
-  return(resultado)
-}
-
-# Invocar
-resultado <- ipc_por_grupo(datos, "04 Vivienda, agua, electricidad")
-print(resultado)
-```
-
----
-
-## 5. Función para ranking (Ejercicio 3 del examen 2)
-
-**Caso típico:** devolver un ranking de autonomías ordenadas por una variación.
-
-```r
-ranking_variacion <- function(df, grupo_consumo) {
-
-  # Filtrar el grupo
-  df_grupo <- df[df$Grupo == grupo_consumo, ]
-
-  # Limpiar nombre de autonomía
-  df_grupo$Autonomia <- gsub("^[0-9]+ ", "", df_grupo$Autonomia)
-
-  # Ordenar por variación mensual (descendente = mayor subida primero)
-  df_ordenado <- df_grupo[order(df_grupo$VariacionMensual, decreasing = TRUE), ]
-
-  # Añadir columna de posición en el ranking
-  df_ordenado$Ranking <- 1:nrow(df_ordenado)
-
-  # Seleccionar columnas relevantes
-  resultado <- data.frame(
-    Ranking = df_ordenado$Ranking,
-    Autonomia = df_ordenado$Autonomia,
-    VariacionMensual = df_ordenado$VariacionMensual
-  )
-
-  return(resultado)
-}
-
-# Invocar
-ranking <- ranking_variacion(datos, "04 Vivienda, agua, electricidad")
-print(ranking)
-```
-
----
-
-## 6. Función con which.max / which.min (Ejercicio 4 del examen 2)
-
-**Caso típico:** para cada autonomía, devolver el grupo con mayor variación de año.
-
-```r
-grupo_mayor_variacion <- function(df) {
-
-  # Obtener lista de autonomías únicas
-  autonomias <- unique(df$Autonomia)
-
-  # Preparar dataframe resultado
-  resultado <- data.frame(
-    Autonomia = character(),
-    GrupoMayor = character(),
-    Variacion = numeric(),
-    stringsAsFactors = FALSE
-  )
-
-  # Iterar por cada autonomía
-  for (auto in autonomias) {
-
-    # Filtrar filas de esa autonomía
-    filas_auto <- df[df$Autonomia == auto, ]
-
-    # Encontrar el índice del grupo con mayor variación anual
-    idx_max <- which.max(filas_auto$VariacionAnio)
-
-    # Crear la fila del resultado
-    nueva_fila <- data.frame(
-      Autonomia = auto,
-      GrupoMayor = filas_auto$Grupo[idx_max],
-      Variacion = filas_auto$VariacionAnio[idx_max],
-      stringsAsFactors = FALSE
-    )
-
-    # Añadir al resultado
-    resultado <- rbind(resultado, nueva_fila)
-  }
-
-  return(resultado)
-}
-
-# Invocar
-resultado <- grupo_mayor_variacion(datos)
-print(resultado)
-```
-
----
-
-## 7. Recorrer un dataframe con bucles
-
-```r
-# ------- FORMA 1: for sobre filas (el más directo) -------
-for (i in 1:nrow(df)) {
-  cat("Fila", i, ":", df$Autonomia[i], "-", df$Total[i], "\n")
-}
-
-# ------- FORMA 2: for sobre una columna de valores -------
-for (val in df$Autonomia) {
-  cat(val, "\n")
-}
-
-# ------- FORMA 3: apply — aplicar función a columnas -------
-# apply(df, 1, función)  → por filas (1)
-# apply(df, 2, función)  → por columnas (2)
-totales_fila <- apply(df[, 3:10], 1, sum)     # suma de columnas 3-10 por fila
-maximos_col  <- apply(df[, 3:10], 2, max)     # máximo de cada columna
-
-# ------- FORMA 4: sapply / lapply — aplicar función y obtener vector/lista -------
-# sapply devuelve vector o matriz; lapply devuelve lista
-nombres_limpios <- sapply(df$Autonomia, function(x) gsub("^[0-9]+ ", "", x))
-df$Autonomia <- sapply(df$Autonomia, function(x) gsub("^[0-9]+ ", "", x))
-```
-
----
-
-## 8. Construir un dataframe resultado vacío e ir llenándolo
-
-```r
-# ------- FORMA 1: iniciar vacío y hacer rbind en el bucle -------
-resultado <- data.frame(
-  Autonomia = character(),
-  Valor = numeric(),
-  stringsAsFactors = FALSE
-)
-
-for (auto in unique(df$Autonomia)) {
-  filas <- df[df$Autonomia == auto, ]
-  nueva <- data.frame(Autonomia = auto, Valor = max(filas$Total))
-  resultado <- rbind(resultado, nueva)
-}
-
-# ------- FORMA 2: pre-alojar el dataframe (más eficiente) -------
-n <- length(unique(df$Autonomia))
-resultado <- data.frame(
-  Autonomia = character(n),
-  Valor = numeric(n),
-  stringsAsFactors = FALSE
-)
-
-for (i in seq_along(unique(df$Autonomia))) {
-  auto <- unique(df$Autonomia)[i]
-  filas <- df[df$Autonomia == auto, ]
-  resultado$Autonomia[i] <- auto
-  resultado$Valor[i] <- max(filas$Total)
-}
-```
-
----
-
-## 9. `which.max()` y `which.min()`
-
-```r
-which.max(c(3, 1, 7, 2))    # → 3  (posición del máximo)
-which.min(c(3, 1, 7, 2))    # → 2  (posición del mínimo)
-
-# Obtener el valor máximo
-max(df$Total)                           # el valor
-df$Total[which.max(df$Total)]           # mismo resultado
-df$Autonomia[which.max(df$Total)]       # el nombre de la autonomía con el máximo
-
-# Obtener la FILA completa del máximo
-df[which.max(df$Total), ]
-
-# Obtener el grupo con mayor variación por autonomía
-idx <- which.max(filas_auto$VariacionAnio)
-grupo_ganador <- filas_auto$Grupo[idx]
-```
-
----
-
-## 10. Plantilla base para el examen de funciones
-
-Según las instrucciones del examen, el script tiene que tener esta estructura:
+## 3. Plantilla base de script para el examen
 
 ```r
 # PIA - Examen de R
 # Nombre Apellidos
 # Fecha
 
-# ---- Importaciones ----
+# ---- Paquetes necesarios ----
 library(readODS)
-# library(dplyr)  # si lo usas
 
-# ---- Ruta del fichero ----
+# ---- Ruta del fichero (siempre al inicio) ----
 ruta <- "C:/ruta/al/fichero/datos.ods"
 
-# ====================================================
+# ============================================================
 # EJERCICIO 1: Carga de datos
-# ====================================================
-# Descripción: esta función carga los datos del IPC desde el .ods
+# Descripción: carga el fichero y devuelve el dataframe limpio
 # Parámetros: ninguno (usa la variable global ruta)
-# Devuelve: dataframe con los datos cargados
+# Devuelve: dataframe con los datos del .ods
+# ============================================================
 
 cargar_datos <- function() {
-  df <- read_ods(path = ruta, sheet = 1, range = "A7:S50", col_names = FALSE)
+
+  df <- read_ods(
+    path = ruta,          # ruta definida arriba como variable global
+    sheet = 1,            # primera hoja
+    range = "A7:S121",    # rango exacto dado en el enunciado
+    col_names = FALSE     # la primera fila del rango son datos, no cabecera
+  )
+
+  # Poner nombres a las columnas (adaptar según lo que haya en el .ods)
   colnames(df) <- c("Autonomia", "Grupo", "Indice", "VarMensual", "VarAnual", "VarAnio")
-  # Limpiamos tipos si hace falta
-  df$Indice <- as.numeric(df$Indice)
-  return(df)
+
+  # Convertir columnas numéricas si hace falta
+  df$Indice    <- as.numeric(df$Indice)
+  df$VarMensual <- as.numeric(df$VarMensual)
+
+  return(df)  # devuelve el dataframe listo para usar
 }
 
-# Invocar y mostrar
+# Invocar y mostrar resultado
 datos <- cargar_datos()
 print(datos)
+```
 
-# ====================================================
-# EJERCICIO 2: Filtrado por grupo de consumo
-# ====================================================
-# ...
+---
 
-funcion_ej2 <- function(df, grupo) {
-  # ...
+## 4. Función de filtrado  recibe el df y un parámetro de filtro
+
+```r
+# ============================================================
+# EJERCICIO 2: Filtrar por grupo de consumo
+# Descripción: devuelve autonomías con el IPC del grupo indicado
+# Parámetros:
+#   df          el dataframe cargado (el que devuelve cargar_datos)
+#   grupo       texto con el nombre del grupo, ej: "04 Vivienda..."
+# Devuelve: dataframe con columnas Autonomia e Indice
+# ============================================================
+
+ipc_por_grupo <- function(df, grupo) {
+
+  # Filtrar las filas donde la columna Grupo vale exactamente el parámetro "grupo"
+  df_filtrado <- df[df$Grupo == grupo, ]
+
+  # Limpiar los nombres de autonomía: "01 Andalucía"  "Andalucía"
+  # ^[0-9]+  = uno o más dígitos al inicio
+  # (espacio) = espacio después del número
+  # "" = reemplazar por nada (borrar el código)
+  df_filtrado$Autonomia <- gsub("^[0-9]+ ", "", df_filtrado$Autonomia)
+
+  # Construir el dataframe resultado con solo las columnas que interesan
+  resultado <- data.frame(
+    Autonomia = df_filtrado$Autonomia,  # nombres de autonomía ya limpios
+    IPC       = df_filtrado$Indice,     # valor del IPC para ese grupo
+    stringsAsFactors = FALSE            # evita que los textos se conviertan en factor
+  )
+
   return(resultado)
 }
 
-print(funcion_ej2(datos, "04 Vivienda"))
+# Invocar y mostrar
+res <- ipc_por_grupo(datos, "04 Vivienda, agua, electricidad, gas y otros combustibles")
+print(res)
+```
+
+---
+
+## 5. Función de ranking
+
+```r
+# ============================================================
+# EJERCICIO 3: Ranking de autonomías por variación mensual
+# Descripción: ordena las autonomías de mayor a menor variación
+# Parámetros:
+#   df     dataframe completo
+#   grupo  grupo de consumo a analizar
+# Devuelve: df con columnas Posicion, Autonomia, Variacion
+# ============================================================
+
+ranking_variacion <- function(df, grupo) {
+
+  # Filtrar solo las filas del grupo indicado
+  df_grupo <- df[df$Grupo == grupo, ]
+
+  # Limpiar nombres de autonomía
+  df_grupo$Autonomia <- gsub("^[0-9]+ ", "", df_grupo$Autonomia)
+
+  # Ordenar por VarMensual de mayor a menor (decreasing=TRUE)
+  # order() devuelve los ÍNDICES en el orden deseado, no los valores
+  df_ordenado <- df_grupo[order(df_grupo$VarMensual, decreasing = TRUE), ]
+
+  # Resetear índices para que vayan del 1 al nrow
+  rownames(df_ordenado) <- NULL
+
+  # Añadir columna de posición en el ranking
+  df_ordenado$Posicion <- 1:nrow(df_ordenado)
+  # 1:nrow(df_ordenado) genera una secuencia 1, 2, 3, ... hasta el número de filas
+
+  # Devolver solo las columnas relevantes
+  resultado <- df_ordenado[, c("Posicion", "Autonomia", "VarMensual")]
+
+  return(resultado)
+}
+
+print(ranking_variacion(datos, "04 Vivienda, agua, electricidad, gas y otros combustibles"))
+```
+
+---
+
+## 6. Función que itera por grupos  for + which.max
+
+```r
+# ============================================================
+# EJERCICIO 4: Para cada autonomía, el grupo con mayor variación anual
+# Descripción: itera por autonomías y busca en cada una qué grupo sube más
+# Parámetros:
+#   df  dataframe completo con todas las autonomías y grupos
+# Devuelve: df con Autonomia, GrupoLider y Variacion
+# ============================================================
+
+grupo_lider_por_autonomia <- function(df) {
+
+  # Limpiar nombres antes de iterar
+  df$Autonomia <- gsub("^[0-9]+ ", "", df$Autonomia)
+
+  # Crear el dataframe resultado vacío con las columnas que queremos
+  resultado <- data.frame(
+    Autonomia  = character(),   # columna de texto vacía
+    GrupoLider = character(),   # columna de texto vacía
+    Variacion  = numeric(),     # columna numérica vacía
+    stringsAsFactors = FALSE
+  )
+
+  # Obtener lista de autonomías únicas (sin repetidos)
+  autonomias <- unique(df$Autonomia)
+  # unique() elimina duplicados: si "Andalucía" aparece 10 veces, la devuelve una vez
+
+  # Iterar por cada autonomía
+  for (auto in autonomias) {
+    # auto toma el valor de cada autonomía en cada vuelta del bucle
+
+    # Filtrar solo las filas de esta autonomía
+    filas_auto <- df[df$Autonomia == auto, ]
+    # Ahora filas_auto tiene solo las filas de esa comunidad autónoma
+
+    # Encontrar el índice del grupo con mayor VarAnio en esas filas
+    idx <- which.max(filas_auto$VarAnio)
+    # which.max() devuelve la POSICIÓN (dentro de filas_auto) del valor máximo
+
+    # Construir la fila del resultado
+    nueva_fila <- data.frame(
+      Autonomia  = auto,                      # nombre de la autonomía
+      GrupoLider = filas_auto$Grupo[idx],     # el grupo en la posición del máximo
+      Variacion  = filas_auto$VarAnio[idx],   # el valor de variación máxima
+      stringsAsFactors = FALSE
+    )
+
+    # Añadir la fila al dataframe resultado
+    resultado <- rbind(resultado, nueva_fila)
+  }
+
+  return(resultado)
+}
+
+print(grupo_lider_por_autonomia(datos))
+```
+
+---
+
+## 7. Iterar sobre filas  for con índice
+
+```r
+# FORMA 1: iterar por índice de fila (accedes a la fila por posición)
+for (i in 1:nrow(df)) {
+  # i toma los valores 1, 2, 3, ... hasta el número de filas
+  valor <- df$Total[i]     # accede al Total de la fila i
+  nombre <- df$Autonomia[i] # accede a la Autonomia de la fila i
+  cat(i, "-", nombre, ":", valor, "\n")  # imprime en consola
+}
+
+# FORMA 2: iterar por valores de una columna
+for (nombre in df$Autonomia) {
+  # nombre toma el valor de cada celda de la columna Autonomia
+  cat(nombre, "\n")
+}
+# Inconveniente: no tienes el índice i disponible, no puedes acceder a otras columnas
+
+# FORMA 3: apply  aplica una función a cada fila sin for explícito
+# apply(df, 1, FUN)  aplica FUN a cada fila (1=filas, 2=columnas)
+sumas_por_fila <- apply(df[, 3:10], 1, sum)
+# Suma las columnas 3 a 10 para cada fila
+# Resultado: vector con una suma por fila
+
+maximos_por_fila <- apply(df[, 3:10], 1, max)
+# El valor máximo de las columnas 3-10 para cada fila
 ```

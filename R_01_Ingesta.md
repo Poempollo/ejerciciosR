@@ -1,201 +1,218 @@
-# R — Ingesta de Datos
-> Ctrl+F para buscar. Múltiples formas de hacer lo mismo. Sin relleno.
+﻿# R  Ingesta de Datos
+> Solo R base. Ctrl+F para buscar. Cada línea explicada.
 
 ---
 
-## 1. Establecer directorio de trabajo
-
-```r
-# Forma estándar — backslash doble o slash normal
-setwd("C:/Users/usuario/Documents/datos")
-setwd("C:\\Users\\usuario\\Documents\\datos")
-
-# Verificar dónde estás
-getwd()
-
-# Ver qué ficheros hay en el directorio actual
-list.files()
-list.files(pattern = "\\.ods$")  # solo .ods
-```
-
-**TIP:** Si el .ods y el script están en la misma carpeta, `setwd` apunta a esa carpeta. El resto de rutas son relativas.
+## Qué significa "ingestar datos"
+Cargar un fichero externo (Excel, CSV, ODS) y meterlo en un dataframe de R.
+Un **dataframe** es una tabla: filas = registros, columnas = variables.
 
 ---
 
-## 2. Cargar `.ods` con `readODS::read_ods()`
+## 1. Directorio de trabajo  setwd()
 
-Primero instalar/cargar el paquete:
 ```r
-# Instalar (solo la primera vez)
-install.packages("readODS")
+# setwd() le dice a R en qué carpeta buscar ficheros.
+# Sin esto, R no encontrará tu .ods ni tu .csv aunque estén ahí.
 
-# Cargar
-library(readODS)
+setwd("C:/Users/javier/Desktop/datos")      # slash normal /
+setwd("C:\\Users\\javier\\Desktop\\datos")  # o doble backslash \\
+
+getwd()      # muestra el directorio actual  para verificar que está bien
+list.files() # lista los ficheros que hay en ese directorio
 ```
 
-### Parámetros clave de `read_ods()`
+---
 
-| Parámetro | Qué hace | Ejemplo |
-|---|---|---|
-| `path` | Ruta al fichero | `"agua.ods"` |
-| `sheet` | Hoja (número o nombre) | `1` o `"Hoja1"` |
-| `col_names` | ¿Primera fila es cabecera? | `TRUE` / `FALSE` |
-| `range` | Rango de celdas a leer | `"A7:S121"` |
-| `na` | Qué tratar como NA | `c("", "-", "NA")` |
-| `skip` | Filas a saltar al inicio | `6` (salta 6 filas) |
-
-### Variantes de carga
+## 2. Cargar un .ods con read_ods()
 
 ```r
-# ------- VARIANTE 1: Con rango exacto (lo más habitual en el examen) -------
-datosAgua <- read_ods(
-  path = "agua.ods",
-  sheet = 1,
-  range = "A7:S121",   # filas 7 a 121, columnas A a S
-  col_names = FALSE    # no cargar cabecera
-)
+install.packages("readODS")  # solo la PRIMERA vez que lo instalas en el PC
+library(readODS)              # esto sí va en CADA script que lo use
+```
 
-# ------- VARIANTE 2: Saltando filas de cabecera con skip -------
-datosAgua <- read_ods(
-  path = "agua.ods",
-  sheet = 1,
-  skip = 6,            # salta las 6 primeras filas
-  col_names = FALSE
-)
+### Parámetros de read_ods()
 
-# ------- VARIANTE 3: Con nombre de hoja -------
-datosAgua <- read_ods(
-  path = "agua.ods",
-  sheet = "Datos",     # nombre exacto de la pestaña
+| Parámetro  | Para qué sirve                                          | Ejemplo           |
+|------------|---------------------------------------------------------|-------------------|
+| path       | Ruta al fichero                                         | "datos.ods"       |
+| sheet      | Qué hoja leer (número o nombre)                         | 1 o "Hoja1"       |
+| col_names  | ¿La primera fila del rango es cabecera?                 | TRUE / FALSE      |
+| range      | Rango exacto de celdas                                  | "A7:S121"         |
+| na         | Qué valores del fichero tratar como NA en R             | c("", "-", "N/A") |
+| skip       | Cuántas filas saltar desde el inicio antes de leer      | 6                 |
+
+### Variantes
+
+```r
+# VARIANTE 1  rango exacto, sin cabecera (la más habitual en el examen)
+# range="A7:S121"   lee exactamente desde A7 hasta S121, no más
+# col_names=FALSE  la primera fila del rango son datos, no nombres de columna
+df <- read_ods(
+  path = "datos.ods",
+  sheet = 1,
   range = "A7:S121",
   col_names = FALSE
 )
 
-# ------- VARIANTE 4: Tratando celdas vacías como NA -------
-datosAgua <- read_ods(
-  path = "agua.ods",
+# VARIANTE 2  skip para saltar las filas de cabecera al inicio del fichero
+# Cuando no sabes el rango exacto pero sabes cuántas filas de "título" hay arriba
+# skip=6  salta filas 1-6 y empieza a leer desde la 7
+df <- read_ods(
+  path = "datos.ods",
+  sheet = 1,
+  skip = 6,
+  col_names = TRUE  # ahora la fila 7 SÍ es la cabecera con nombres
+)
+
+# VARIANTE 3  por nombre de hoja en vez de número
+# Útil si el .ods tiene varias pestañas y necesitas una concreta
+df <- read_ods(
+  path = "datos.ods",
+  sheet = "DatosAgua",   # nombre exacto de la pestaña (sensible a mayúsculas)
+  range = "A7:S121",
+  col_names = FALSE
+)
+
+# VARIANTE 4  con tratamiento de celdas vacías y guiones
+# na=c(...)  cualquier celda con esos valores se convierte en NA automáticamente
+# Útil cuando el .ods usa "-" o espacios vacíos para indicar "sin dato"
+df <- read_ods(
+  path = "datos.ods",
   sheet = 1,
   range = "A7:S121",
   col_names = FALSE,
-  na = c("", " ", "-", "N/A")  # todo esto se convertirá en NA
+  na = c("", " ", "-", "N/A")
 )
 ```
 
-**DIFERENCIA `col_names` vs `skip`:**
-- `col_names = FALSE` → la primera fila del rango NO se usa como nombre de columna
-- `skip = N` → salta N filas **antes** de empezar a leer (sin rango definido)
-- Con `range` lo más limpio es `col_names = FALSE`
+**Diferencia clave entre col_names y skip:**
+- `col_names = FALSE`  la primera fila del RANGO son datos, no cabecera
+- `skip = N`  salta N filas del fichero completo antes de empezar
+- Si usas `range`, usa `col_names = FALSE`. Si no usas `range`, usa `skip`.
 
 ---
 
-## 3. Cargar `.csv`
+## 3. Cargar un .csv
 
 ```r
-# ------- VARIANTE 1: CSV con coma como separador (inglés) -------
-datosCenso <- read.csv("censo.csv", encoding = "UTF-8")
+# VARIANTE 1  separador coma, formato inglés
+# La mayoría de CSVs descargados de webs en inglés usan coma
+df <- read.csv("censo.csv")
 
-# ------- VARIANTE 2: CSV con punto y coma como separador (español/europeo) -------
-datosCenso <- read.csv2("censo.csv", encoding = "UTF-8")
+# VARIANTE 2  separador punto y coma, formato español
+# El INE y la mayoría de organismos españoles usan ; como separador
+# porque en España la coma ya se usa como separador decimal
+df <- read.csv2("censo.csv")
 
-# ------- VARIANTE 3: read.table — control total -------
-datosCenso <- read.table(
+# VARIANTE 3  read.table para control total
+# Cuando el fichero tiene algo raro: separador inusual, decimal con coma...
+df <- read.table(
   "censo.csv",
-  header = TRUE,       # primera fila es cabecera
-  sep = ";",           # separador
-  dec = ",",           # decimal con coma (España)
-  encoding = "UTF-8",
-  fill = TRUE,         # rellena filas incompletas
-  quote = '"'
+  header = TRUE,           # TRUE = primera fila = nombres de columna
+  sep = ";",               # separador de columnas es punto y coma
+  dec = ",",               # separador decimal es coma (España)
+  fileEncoding = "UTF-8",  # para que tildes y ñ se lean bien
+  fill = TRUE              # si alguna fila tiene menos columnas, rellena con NA
+)
+```
+
+**Cómo saber qué variante usar:**
+Abre el CSV en el Bloc de Notas:
+- Si los valores están separados por `,`  `read.csv`
+- Si por `;`  `read.csv2`
+- Si aparecen caracteres raros (tildes mal)  añade `fileEncoding = "latin1"` o `"UTF-8"`
+
+---
+
+## 4. Poner nombres a las columnas
+
+Cuando cargas con `col_names = FALSE`, R pone nombres automáticos (`V1`, `V2`...).
+Hay que cambiarlos para poder referenciar las columnas por nombre.
+
+```r
+colnames(df)       # ver los nombres actuales de todas las columnas
+names(df)          # exactamente igual, otra forma de hacer lo mismo
+
+# Cambiar TODOS los nombres de golpe (el orden es izquierda a derecha)
+colnames(df) <- c("Autonomia", "Tipo", "Anno2018", "Anno2019", "Anno2020")
+
+# Cambiar una sola columna  por posición
+colnames(df)[1] <- "Autonomia"  # la columna 1 pasa a llamarse "Autonomia"
+colnames(df)[3] <- "Anno2020"   # la columna 3 pasa a llamarse "Anno2020"
+
+# Cambiar una columna  buscando por su nombre actual
+# Útil cuando no sabes en qué posición está pero sí cómo se llama
+colnames(df)[colnames(df) == "V3"] <- "Anno2020"
+# Lee como: "busca la columna cuyo nombre actual es V3 y cámbialo a Anno2020"
+```
+
+---
+
+## 5. Convertir tipos de columnas
+
+Después de cargar, los números a veces se leen como texto (character). Hay que convertirlos.
+
+```r
+str(df)           # muestra el tipo de CADA columna: int, chr, num...
+class(df$Total)   # tipo de una columna concreta: "character", "integer"...
+
+# Convertir a entero (sin decimales: 1, 2, 1000)
+df$Total <- as.integer(df$Total)
+
+# Convertir a número con decimales (1.5, 3.14)
+df$Total <- as.numeric(df$Total)
+
+# Convertir a texto
+df$Nombre <- as.character(df$Nombre)
+
+# PROBLEMA: columna tiene puntos de miles  "1.234.567"
+# R lee el punto como separador decimal, así que no puede convertir directamente
+# Solución: primero quitar los puntos, luego convertir
+df$Total <- as.integer(gsub("\\.", "", df$Total))
+# gsub("\\.", "", x)  busca todos los puntos y los reemplaza por nada (los borra)
+# \\.  el . en regex significa "cualquier caracter", así que hay que escaparlo con \\
+
+# PROBLEMA: columna tiene coma decimal  "1.234,56"
+# Quitar puntos de miles y cambiar coma decimal por punto
+df$Total <- as.numeric(
+  gsub(",", ".",          # PASO 2: cambia la coma decimal por punto
+    gsub("\\.", "",       # PASO 1: borra los puntos de miles
+      df$Total
+    )
+  )
 )
 
-# ------- VARIANTE 4: readr (más moderno, más rápido) -------
-library(readr)
-datosCenso <- read_csv("censo.csv")   # coma
-datosCenso <- read_csv2("censo.csv")  # punto y coma
+# Convertir VARIAS columnas a la vez con lapply
+cols <- c("Total", "Hombres", "Mujeres")  # columnas que quieres convertir
+df[cols] <- lapply(df[cols], as.integer)  # aplica as.integer a cada una
+# lapply(lista, función)  aplica la función a cada elemento de la lista
 ```
-
-**TIP:** Si ves caracteres raros (ñ, tildes), añade `encoding = "UTF-8"` o `encoding = "latin1"`.
 
 ---
 
-## 4. Convertir tipos de columnas después de cargar
-
-El problema típico: una columna es texto cuando debería ser número.
+## 6. Verificar que la carga fue bien  siempre hacer esto
 
 ```r
-# ------- Ver tipos actuales -------
-str(datosCenso)       # estructura completa
-class(datosCenso$Total)  # tipo de una columna concreta
-
-# ------- Convertir a entero -------
-datosCenso$Total <- as.integer(datosCenso$Total)
-
-# ------- Convertir a número (con decimales) -------
-datosCenso$Total <- as.numeric(datosCenso$Total)
-
-# ------- Convertir a texto -------
-datosCenso$Nombre <- as.character(datosCenso$Nombre)
-
-# ------- PROBLEMA: columna tiene puntos de miles "1.234.567" -------
-# Primero quitar los puntos, luego convertir
-datosCenso$Total <- as.integer(gsub("\\.", "", datosCenso$Total))
-
-# ------- PROBLEMA: columna tiene comas decimales "1.234,56" -------
-datosCenso$Total <- as.numeric(gsub(",", ".", gsub("\\.", "", datosCenso$Total)))
-
-# ------- Convertir varias columnas a la vez -------
-cols_numericas <- c("Total", "Hombres", "Mujeres")
-datosCenso[cols_numericas] <- lapply(datosCenso[cols_numericas], as.integer)
+head(df)        # primeras 6 filas  ver si los datos tienen buen aspecto
+tail(df)        # últimas 6 filas  ver si el pie está bien cargado o da basura
+dim(df)         # c(nº filas, nº columnas)  verificar dimensiones
+nrow(df)        # solo el número de filas
+ncol(df)        # solo el número de columnas
+str(df)         # estructura: nombres, tipos y primeros valores de cada columna
+summary(df)     # estadísticas por columna (media, min, max, NAs...)
+colnames(df)    # solo los nombres de las columnas
 ```
 
 ---
 
-## 5. Poner nombres a las columnas manualmente
+## 7. Problemas frecuentes al cargar
 
-Cuando cargas sin cabecera, R pone nombres tipo `A`, `B`... o `V1`, `V2`...
-
-```r
-# Ver nombres actuales
-colnames(datosAgua)
-names(datosAgua)
-
-# Poner nombres a todas las columnas
-colnames(datosAgua) <- c("Autonomia", "Tipo", "2015", "2016", "2017", "2018", "2019", "2020")
-
-# Cambiar solo una columna (por posición)
-colnames(datosAgua)[1] <- "Autonomia"
-colnames(datosAgua)[5] <- "Total_2020"
-
-# Cambiar por nombre antiguo
-colnames(datosAgua)[colnames(datosAgua) == "V1"] <- "Autonomia"
-```
-
----
-
-## 6. Verificar que la carga fue bien
-
-```r
-head(datosAgua)           # primeras 6 filas
-tail(datosAgua)           # últimas 6 filas
-head(datosAgua, 10)       # primeras 10 filas
-dim(datosAgua)            # filas x columnas
-nrow(datosAgua)           # número de filas
-ncol(datosAgua)           # número de columnas
-str(datosAgua)            # estructura y tipos
-summary(datosAgua)        # estadísticas rápidas
-View(datosAgua)           # abre visor visual en RStudio
-colnames(datosAgua)       # nombres de columnas
-```
-
----
-
-## 7. Qué hacer si hay problemas al cargar
-
-| Problema | Causa probable | Solución |
-|---|---|---|
-| `could not find function "read_ods"` | Paquete no cargado | `library(readODS)` |
-| Tildes/ñ mal | Encoding incorrecto | Añadir `encoding = "UTF-8"` o `"latin1"` |
-| Columnas desplazadas | Separador incorrecto | Cambiar `sep` |
-| Todo en una sola columna | CSV con `;` pero usas `read.csv` | Usar `read.csv2` |
-| NAs donde no debería | Celdas vacías o guiones | Añadir `na = c("", "-")` |
-| Menos filas de las esperadas | `range` mal especificado | Verificar el rango en el .ods |
+| Problema                            | Por qué pasa                         | Solución                                |
+|-------------------------------------|--------------------------------------|-----------------------------------------|
+| could not find function "read_ods"  | Paquete no cargado                   | library(readODS) antes de usarlo        |
+| Tildes y ñ salen raras              | Encoding incorrecto                  | fileEncoding = "UTF-8" o "latin1"       |
+| Todo en una sola columna            | CSV con ; pero usas read.csv         | Usar read.csv2                          |
+| Menos filas de las esperadas        | El range está mal                    | Verificar el rango abriendo el .ods     |
+| Columnas V1, V2, V3...              | Cargaste con col_names=FALSE         | Asignar nombres con colnames(df) <-     |
+| Sumas dan NA en vez de número       | La columna es texto, no número       | as.numeric() o as.integer()             |
