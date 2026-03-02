@@ -1,0 +1,69 @@
+¿Qué indica que un modelo tenga alta accuracy en entrenamiento pero notablemente menor en evaluación con datos de test? {
+=Que el modelo está sobreajustado y no generaliza bien a datos nuevos 
+~Que el modelo necesita más épocas de entrenamiento 
+~Que la función de pérdida está mal definida 
+~Que el dataset de entrenamiento es demasiado pequeño
+}
+
+¿Qué caracteriza principalmente el overfitting en un modelo de machine learning? {
+~Que el modelo no aprende el patrón de los datos y presenta bajo rendimiento tanto en train como en test
+=Que el modelo se ajusta demasiado a datos de entrenamiento, incluyendo ruido o anomalías, y generaliza mal
+~Que el modelo mejora su precisión progresivamente tanto en entrenamiento como en validación
+~Que el modelo requiere más datos de entrada para mejorar su capacidad predictiva
+}
+
+¿Por qué es necesario vectorizar las secuencias de texto antes de introducirlas en una red neuronal densa? {
+~Porque mejora la interpretabilidad del modelo al mantener el orden original de las palabras
+~Porque permite reducir el tamaño del dataset eliminando palabras poco frecuentes
+=Porque las redes neuronales requieren tensores de tamaño fijo y valores numéricos como entrada
+~Porque evita la necesidad de usar funciones de activación en las capas ocultas
+}
+
+¿Cuál es el objetivo principal de aplicar técnicas de regularización como reducir parámetros o usar dropout en un modelo de machine learning? {
+=Mejorar la capacidad de generalización limitando la complejidad y evitando que el modelo memorice los datos de entrenamiento
+~Aumentar el número de iteraciones necesarias para alcanzar la convergencia del modelo
+~Incrementar el tamaño del dataset sintético generado durante el entrenamiento
+~Optimizar la velocidad de inferencia reduciendo el número de predicciones simultáneas
+}
+
+¿Qué efecto tiene añadir regularización L2 (decaimiento de pesos) a la función de coste durante el entrenamiento de una red neuronal? {
+~Aumenta la varianza del modelo permitiendo pesos más grandes y complejos
+=Penaliza los pesos grandes añadiendo su valor cuadrado al error, limitando la complejidad del modelo
+~Elimina completamente los pesos de menor magnitud durante el entrenamiento
+~Convierte la función de activación en una función lineal en todas las capas
+}
+
+¿Cuál es el objetivo principal de aplicar la técnica de dropout durante el entrenamiento de una red neuronal? {
+~Reducir el número total de capas del modelo para acelerar el entrenamiento
+~Aumentar la capacidad del modelo para memorizar los datos de entrenamiento
+=Desactivar aleatoriamente neuronas para evitar dependencias entre ellas y mejorar la generalización
+~Sustituir la función de activación por una función de regularización automática
+}
+
+¿Cuál es una de las funcionalidades principales de TensorBoard en el desarrollo de modelos con TensorFlow? {
+=Visualizar métricas como loss y accuracy durante el entrenamiento de forma gráfica
+~Modificar automáticamente la arquitectura del modelo para mejorar su rendimiento
+~Generar nuevos datos sintéticos para ampliar el conjunto de entrenamiento
+~Optimizar los hiperparámetros sin intervención del desarrollador
+}
+
+¿Cuál es el propósito de técnicas como batch normalization y la optimización de hiperparámetros en modelos de machine learning? {
+~Reducir el tamaño del dataset eliminando variables irrelevantes automáticamente
+~Sustituir completamente el proceso de entrenamiento por reglas deterministas
+=Mejorar el rendimiento y estabilidad del modelo ajustando su arquitectura y parámetros de entrenamiento
+~Evitar la necesidad de dividir los datos en conjuntos de entrenamiento y test
+}
+
+¿Cuál es el principal beneficio de aplicar Batch Normalization dentro de una red neuronal profunda? {
+=Mejorar la velocidad y estabilidad del entrenamiento, facilitando la propagación del gradiente entre capas
+~Eliminar automáticamente los datos atípicos del dataset antes del entrenamiento
+~Reducir el número de parámetros del modelo sin afectar su capacidad
+~Sustituir la función de activación por una lineal para todas las capas
+}
+
+¿Cuál es el objetivo de la optimización de hiperparámetros en el diseño de un modelo de deep learning? {
+~Reducir automáticamente el tamaño del dataset para acelerar el entrenamiento
+~Eliminar la necesidad de usar datos de validación y test
+~Convertir el entrenamiento en un proceso completamente determinista sin iteraciones
+=Encontrar la combinación de parámetros que proporciona el mejor desempeño del modelo de forma empírica
+}
